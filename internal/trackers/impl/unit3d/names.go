@@ -33,7 +33,7 @@ func buildUnit3DName(tracker string, meta api.PreparedMetadata) string {
 	case "ACM":
 		return buildACMName(meta)
 	case "CBR":
-		return addNoGroupSuffix(name, meta, "NoGroup")
+		return BuildCBRName(meta)
 	case "DP":
 		return buildDPName(name, meta)
 	case "LDU":
