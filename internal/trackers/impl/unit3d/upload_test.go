@@ -643,7 +643,7 @@ func TestBuildUnit3DNameLDUUsesFirstParseableLanguages(t *testing.T) {
 		},
 	}
 
-	got := buildUnit3DName("LDU", meta)
+	got := buildUnit3DName("LDU", meta, config.TrackerConfig{})
 	if !strings.Contains(got, "[JPN]") {
 		t.Fatalf("expected first parseable audio language suffix, got %q", got)
 	}
@@ -744,7 +744,7 @@ func TestBuildUnit3DNameACM(t *testing.T) {
 		},
 		SubtitleLanguages: []string{"Japanese"},
 	}
-	got := buildUnit3DName("ACM", meta)
+	got := buildUnit3DName("ACM", meta, config.TrackerConfig{})
 	if !strings.Contains(got, "Movie / Original Movie") {
 		t.Fatalf("expected ACM original title injection, got %q", got)
 	}

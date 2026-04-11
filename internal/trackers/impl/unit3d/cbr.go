@@ -5,7 +5,7 @@ package unit3d
 
 import (
 	"fmt"
-	"log"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -23,7 +23,9 @@ func resolveUnit3DCBRCategoryID(meta api.PreparedMetadata) string {
 	return resolveUnit3DCategoryID(meta)
 }
 
-func BuildCBRName(meta api.PreparedMetadata) string {
+var audioTagRegex = regexp.MustCompile(`(?i)-([^.-]+)\.(?:DUAL|MULTI)`)
+
+func BuildCBRName(meta api.PreparedMetadata, customTag string) string {
 	name := baseReleaseName(meta)
 	if name == "" {
 		return ""
@@ -39,7 +41,7 @@ func BuildCBRName(meta api.PreparedMetadata) string {
 	)
 	name = replacer.Replace(name)
 
-	// If it is a Series or Anime, remove the year from the title.
+	// If it is a TV or Anime, remove the year from the title.
 	category := resolveUnit3DCategory(meta)
 	if category == "TV" || meta.Anime {
 		year := strconv.Itoa(meta.Release.Year)
@@ -67,8 +69,12 @@ func BuildCBRName(meta api.PreparedMetadata) string {
 	if origLang == "pt" && aka != "" {
 		akaClean := strings.TrimSpace(strings.ReplaceAll(aka, "AKA", ""))
 		title := meta.Release.Title
+
 		name = strings.ReplaceAll(name, aka, "")
+		name = strings.ReplaceAll(name, strings.ReplaceAll(aka, " ", "."), "")
 		name = strings.ReplaceAll(name, title, akaClean)
+		name = strings.ReplaceAll(name, strings.ReplaceAll(title, " ", "."), akaClean)
+
 		name = strings.TrimSpace(name)
 	}
 
@@ -78,8 +84,6 @@ func BuildCBRName(meta api.PreparedMetadata) string {
 		audioTag := ""
 		hasPortuguese := false
 		for _, l := range meta.AudioLanguages {
-			// log audio languages
-			log.Println("Audio language:", l)
 			lang := strings.ToLower(l)
 			if lang == "portuguese" || lang == "português" {
 				hasPortuguese = true
@@ -100,7 +104,25 @@ func BuildCBRName(meta api.PreparedMetadata) string {
 				idx := strings.LastIndex(cbrName, "-")
 				parts := []string{cbrName[:idx], cbrName[idx+1:]}
 
-				cbrName = fmt.Sprintf("%s%s-%s", parts[0], audioTag, parts[1])
+				if customTag != "" && strings.Contains(name, customTag) {
+					searchStr := meta.Filename
+					if searchStr == "" {
+						searchStr = meta.ReleaseName
+					}
+
+					if match := audioTagRegex.FindStringSubmatch(searchStr); len(match) > 1 {
+						originalGroupTag := match[1]
+						if !strings.EqualFold(originalGroupTag, meta.Tag) {
+							cbrName = fmt.Sprintf("%s-%s%s-%s", parts[0], originalGroupTag, audioTag, parts[1])
+						} else {
+							cbrName = fmt.Sprintf("%s%s-%s", parts[0], audioTag, parts[1])
+						}
+					} else {
+						cbrName = fmt.Sprintf("%s%s-%s", parts[0], audioTag, parts[1])
+					}
+				} else {
+					cbrName = fmt.Sprintf("%s%s-%s", parts[0], audioTag, parts[1])
+				}
 			} else {
 				cbrName += audioTag
 			}
