@@ -37,6 +37,8 @@ func buildUnit3DName(tracker string, meta api.PreparedMetadata, cfg config.Track
 		return BuildCBRName(meta, cfg.TagForCustomRelease)
 	case "DP":
 		return buildDPName(name, meta)
+	case "LCD":
+		return BuildCBRName(meta, cfg.TagForCustomRelease)
 	case "LDU":
 		return buildLDUName(name, meta)
 	case "RF":
