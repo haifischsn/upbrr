@@ -20,8 +20,7 @@ func TestBuildCBRName(t *testing.T) {
 			name: "Basic movie",
 			meta: api.PreparedMetadata{
 				ReleaseName: "Movie.2023.1080p.WEB-DL.DDP5.1.H.264-GRP",
-				Release:     api.ReleaseInfo{Title: "Movie", Year: 2023},
-				Tag:         "GRP",
+				Release:     api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
 			},
 			want: "Movie.2023.1080p.WEB-DL.DDP5.1.H.264-GRP",
 		},
@@ -29,8 +28,7 @@ func TestBuildCBRName(t *testing.T) {
 			name: "Portuguese DUAL",
 			meta: api.PreparedMetadata{
 				ReleaseName:    "Movie.2023.1080p.WEB-DL.H.264-GRP",
-				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023},
-				Tag:            "GRP",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
 				AudioLanguages: []string{"English", "Portuguese"},
 			},
 			want: "Movie.2023.1080p.WEB-DL.H.264 DUAL-GRP",
@@ -40,8 +38,7 @@ func TestBuildCBRName(t *testing.T) {
 			meta: api.PreparedMetadata{
 				ReleaseName:    "Movie.2023.1080p.WEB-DL.H.264-CBR",
 				Filename:       "Movie.2023.1080p.WEB-DL.H.264-GRP.DUAL.mkv",
-				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023},
-				Tag:            "CBR",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
 				AudioLanguages: []string{"English", "Portuguese"},
 			},
 			customTag: "CBR",
@@ -54,6 +51,7 @@ func TestBuildCBRName(t *testing.T) {
 				Release: api.ReleaseInfo{
 					Title: "A Foreign Movie",
 					Year:  2023,
+					Group: "GRP",
 				},
 				ExternalIDs: api.ExternalIDs{
 					Category: "MOVIE",
@@ -64,7 +62,6 @@ func TestBuildCBRName(t *testing.T) {
 						RetrievedAKA:     "Filme Brasileiro AKA",
 					},
 				},
-				Tag: "GRP",
 			},
 			want: "Filme Brasileiro.2023.1080p.WEB-DL.H.264-GRP",
 		},

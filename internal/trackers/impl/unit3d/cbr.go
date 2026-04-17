@@ -52,21 +52,30 @@ func BuildCBRName(meta api.PreparedMetadata, customTag string) string {
 		}
 	}
 
-	origLang := resolveOriginalLanguage(meta)
+	origLang := strings.ToLower(resolveOriginalLanguage(meta))
 	aka := ""
 	if meta.ExternalMetadata.TMDB != nil {
 		aka = meta.ExternalMetadata.TMDB.RetrievedAKA
 	}
 
+	ptbrVariations := []string{"português", "portuguese", "pt-br", "pt"}
+	isPtBR := false
+	for _, variation := range ptbrVariations {
+		if origLang == variation {
+			isPtBR = true
+			break
+		}
+	}
+
 	// Remove the AKA title, unless it is Brazilian
-	if origLang != "pt" {
+	if !isPtBR {
 		if aka != "" {
 			name = strings.ReplaceAll(name, aka, "")
 		}
 	}
 
 	// If it is Brazilian, use only the AKA title, deleting the foreign title
-	if origLang == "pt" && aka != "" {
+	if isPtBR && aka != "" {
 		akaClean := strings.TrimSpace(strings.ReplaceAll(aka, "AKA", ""))
 		title := meta.Release.Title
 
@@ -104,7 +113,8 @@ func BuildCBRName(meta api.PreparedMetadata, customTag string) string {
 				idx := strings.LastIndex(cbrName, "-")
 				parts := []string{cbrName[:idx], cbrName[idx+1:]}
 
-				if customTag != "" && strings.Contains(name, customTag) {
+				cleanCustomTag := strings.TrimPrefix(customTag, "-")
+				if cleanCustomTag != "" && strings.Contains(name, cleanCustomTag) {
 					searchStr := meta.Filename
 					if searchStr == "" {
 						searchStr = meta.ReleaseName
@@ -112,7 +122,7 @@ func BuildCBRName(meta api.PreparedMetadata, customTag string) string {
 
 					if match := audioTagRegex.FindStringSubmatch(searchStr); len(match) > 1 {
 						originalGroupTag := match[1]
-						if !strings.EqualFold(originalGroupTag, meta.Tag) {
+						if !strings.EqualFold(originalGroupTag, meta.Release.Group) {
 							cbrName = fmt.Sprintf("%s-%s%s-%s", parts[0], originalGroupTag, audioTag, parts[1])
 						} else {
 							cbrName = fmt.Sprintf("%s%s-%s", parts[0], audioTag, parts[1])
