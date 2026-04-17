@@ -19,35 +19,38 @@ func TestBuildCBRName(t *testing.T) {
 		{
 			name: "Basic movie",
 			meta: api.PreparedMetadata{
-				ReleaseName: "Movie.2023.1080p.WEB-DL.DDP5.1.H.264-GRP",
+				ReleaseName: "Movie 2023 1080p WEB-DL DDP5.1 H.264-GRP",
 				Release:     api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
+				Tag:         "GRP",
 			},
-			want: "Movie.2023.1080p.WEB-DL.DDP5.1.H.264-GRP",
+			want: "Movie 2023 1080p WEB-DL DDP5.1 H.264-GRP",
 		},
 		{
 			name: "Portuguese DUAL",
 			meta: api.PreparedMetadata{
-				ReleaseName:    "Movie.2023.1080p.WEB-DL.H.264-GRP",
+				ReleaseName:    "Movie 2023 1080p WEB-DL H.264-GRP",
 				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
 				AudioLanguages: []string{"English", "Portuguese"},
+				Tag:            "GRP",
 			},
-			want: "Movie.2023.1080p.WEB-DL.H.264 DUAL-GRP",
+			want: "Movie 2023 1080p WEB-DL H.264 DUAL-GRP",
 		},
 		{
-			name: "Custom tag with original group",
+			name: "Custom tag with original group (same as internal)",
 			meta: api.PreparedMetadata{
-				ReleaseName:    "Movie.2023.1080p.WEB-DL.H.264-CBR",
+				ReleaseName:    "Movie 2023 1080p WEB-DL H.264-CBR",
 				Filename:       "Movie.2023.1080p.WEB-DL.H.264-GRP.DUAL.mkv",
 				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
 				AudioLanguages: []string{"English", "Portuguese"},
+				Tag:            "CBR",
 			},
-			customTag: "CBR",
-			want:      "Movie.2023.1080p.WEB-DL.H.264-GRP DUAL-CBR",
+			customTag: "-CBR",
+			want:      "Movie 2023 1080p WEB-DL H.264 DUAL-CBR",
 		},
 		{
 			name: "Brazilian PT override",
 			meta: api.PreparedMetadata{
-				ReleaseName: "A.Foreign.Movie.2023.1080p.WEB-DL.H.264-GRP",
+				ReleaseName: "A Foreign Movie 2023 1080p WEB-DL H.264-GRP",
 				Release: api.ReleaseInfo{
 					Title: "A Foreign Movie",
 					Year:  2023,
@@ -62,8 +65,97 @@ func TestBuildCBRName(t *testing.T) {
 						RetrievedAKA:     "Filme Brasileiro AKA",
 					},
 				},
+				Tag: "-GRP",
 			},
-			want: "Filme Brasileiro.2023.1080p.WEB-DL.H.264-GRP",
+			want: "Filme Brasileiro 2023 1080p WEB-DL H.264-GRP",
+		},
+		{
+			name: "TV year stripping",
+			meta: api.PreparedMetadata{
+				ReleaseName: "Show Series 2023 S01E01 1080p WEB-DL-GRP",
+				Release:     api.ReleaseInfo{Title: "Show Series", Year: 2023, Group: "GRP"},
+				ExternalIDs: api.ExternalIDs{Category: "TV"},
+				Tag:         "GRP",
+			},
+			want: "Show Series S01E01 1080p WEB-DL-GRP",
+		},
+		{
+			name: "Anime year stripping",
+			meta: api.PreparedMetadata{
+				ReleaseName: "Anime Movie (2023) 1080p-GRP",
+				Release:     api.ReleaseInfo{Title: "Anime Movie", Year: 2023, Group: "GRP"},
+				Anime:       true,
+				Tag:         "GRP",
+			},
+			want: "Anime Movie 1080p-GRP",
+		},
+		{
+			name: "Non-pt AKA removal (with spaces)",
+			meta: api.PreparedMetadata{
+				ReleaseName: "Title AKA Some AKA 2023 1080p -GRP",
+				Release:     api.ReleaseInfo{Title: "Title", Year: 2023, Group: "GRP"},
+				ExternalMetadata: api.ExternalMetadata{
+					TMDB: &api.TMDBMetadata{
+						OriginalLanguage: "en",
+						RetrievedAKA:     "Some AKA",
+					},
+				},
+				Tag: "-GRP",
+			},
+			want: "Title AKA 2023 1080p -GRP",
+		},
+		{
+			name: "Portuguese MULTI",
+			meta: api.PreparedMetadata{
+				ReleaseName:    "Movie 2023 1080p WEB-DL H.264-GRP",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
+				AudioLanguages: []string{"English", "Portuguese", "French"},
+				Tag:            "GRP",
+			},
+			want: "Movie 2023 1080p WEB-DL H.264 MULTI-GRP",
+		},
+		{
+			name: "Disc type bypass",
+			meta: api.PreparedMetadata{
+				ReleaseName:    "Movie 2023 1080p BluRay REMUX AVC-GRP",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
+				DiscType:       "BDMV",
+				AudioLanguages: []string{"English", "Portuguese"},
+				Tag:            "GRP",
+			},
+			want: "Movie 2023 1080p BluRay REMUX AVC-GRP",
+		},
+		{
+			name: "Custom tag with original group from filename",
+			meta: api.PreparedMetadata{
+				ReleaseName:    "Movie 2023 1080p WEB-DL-CBR",
+				Filename:       "Movie.2023.1080p.WEB-DL-ORIGGRP.DUAL.mkv",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "NEWGRP"},
+				AudioLanguages: []string{"English", "Portuguese"},
+				Tag:            "CBR",
+			},
+			customTag: "-CBR",
+			want:      "Movie 2023 1080p WEB-DL-ORIGGRP DUAL-CBR",
+		},
+		{
+			name: "Custom tag and same group from filename",
+			meta: api.PreparedMetadata{
+				ReleaseName:    "Movie 2023 1080p WEB-DL-CBR",
+				Filename:       "Movie.2023.1080p.WEB-DL-GRP.DUAL.mkv",
+				Release:        api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
+				AudioLanguages: []string{"English", "Portuguese"},
+				Tag:            "CBR",
+			},
+			customTag: "-CBR",
+			want:      "Movie 2023 1080p WEB-DL DUAL-CBR",
+		},
+		{
+			name: "No group suffix",
+			meta: api.PreparedMetadata{
+				ReleaseName: "Movie 2023 1080p WEB-DL-NoGrp",
+				Release:     api.ReleaseInfo{Title: "Movie", Year: 2023, Group: "GRP"},
+			},
+			want: "Movie 2023 1080p WEB-DL-NoGroup",
 		},
 	}
 
