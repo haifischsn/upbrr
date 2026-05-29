@@ -91,6 +91,10 @@ func (c *closeCounterCore) SaveFinalScreenshotSelections(context.Context, api.Re
 	return nil
 }
 
+func (c *closeCounterCore) ImportMenuImages(context.Context, api.Request, []string) error {
+	return nil
+}
+
 func (c *closeCounterCore) ListUploadCandidates(context.Context, api.Request) ([]api.ScreenshotImage, error) {
 	return nil, nil
 }
@@ -99,7 +103,7 @@ func (c *closeCounterCore) ListUploadedImages(context.Context, api.Request) ([]a
 	return nil, nil
 }
 
-func (c *closeCounterCore) UploadImages(ctx context.Context, req api.Request, host string, screenshots []api.ScreenshotImage) (api.UploadImagesResult, error) {
+func (c *closeCounterCore) UploadImages(_ context.Context, _ api.Request, _ string, _ []api.ScreenshotImage) (api.UploadImagesResult, error) {
 	return api.UploadImagesResult{}, nil
 }
 

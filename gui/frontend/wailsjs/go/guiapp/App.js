@@ -10,8 +10,16 @@ export function BrowseFile() {
   return window['go']['guiapp']['App']['BrowseFile']();
 }
 
+export function BrowseFiles() {
+  return window['go']['guiapp']['App']['BrowseFiles']();
+}
+
 export function BrowseFolder() {
   return window['go']['guiapp']['App']['BrowseFolder']();
+}
+
+export function BrowseImageFiles() {
+  return window['go']['guiapp']['App']['BrowseImageFiles']();
 }
 
 export function BrowsePath() {
@@ -78,8 +86,8 @@ export function FetchScreenshotPlan(arg1, arg2, arg3) {
   return window['go']['guiapp']['App']['FetchScreenshotPlan'](arg1, arg2, arg3);
 }
 
-export function FetchTrackerDryRun(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
-  return window['go']['guiapp']['App']['FetchTrackerDryRun'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+export function FetchTrackerDryRun(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
+  return window['go']['guiapp']['App']['FetchTrackerDryRun'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
 export function GenerateScreenshots(arg1, arg2, arg3, arg4, arg5) {
@@ -132,6 +140,10 @@ export function GetWebAuthStatus() {
 
 export function ImportConfig() {
   return window['go']['guiapp']['App']['ImportConfig']();
+}
+
+export function ImportMenuImages(arg1, arg2, arg3, arg4) {
+  return window['go']['guiapp']['App']['ImportMenuImages'](arg1, arg2, arg3, arg4);
 }
 
 export function ListHistory() {
@@ -210,8 +222,8 @@ export function StartLogStream() {
   return window['go']['guiapp']['App']['StartLogStream']();
 }
 
-export function StartTrackerUpload(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
-  return window['go']['guiapp']['App']['StartTrackerUpload'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+export function StartTrackerUpload(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
+  return window['go']['guiapp']['App']['StartTrackerUpload'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
 export function StopLogStream(arg1) {
