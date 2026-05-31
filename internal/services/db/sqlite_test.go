@@ -15,6 +15,7 @@ import (
 	"time"
 
 	internalerrors "github.com/autobrr/upbrr/internal/errors"
+	"github.com/autobrr/upbrr/pkg/api"
 )
 
 func readSchemaMigrationIDs(t *testing.T, db *sql.DB) []string {
@@ -273,6 +274,13 @@ func TestSQLiteRepositoryCRUD(t *testing.T) {
 			Year:   2024,
 			Type:   "movie",
 		},
+		Bluray: &api.BlurayMetadata{
+			IMDBID:            200,
+			SelectedReleaseID: "123",
+			Candidates: []api.BlurayReleaseCandidate{
+				{ReleaseID: "123", Title: "Example 4K", Score: 99.5},
+			},
+		},
 		UpdatedAt: idsStamp,
 	}); err != nil {
 		t.Fatalf("save external metadata: %v", err)
@@ -282,8 +290,18 @@ func TestSQLiteRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get external metadata: %v", err)
 	}
-	if metadata.TMDB == nil || metadata.TMDB.TMDBID != 100 || metadata.IMDB == nil || metadata.IMDB.IMDBID != 200 {
+	if metadata.TMDB == nil || metadata.TMDB.TMDBID != 100 || metadata.IMDB == nil || metadata.IMDB.IMDBID != 200 || metadata.Bluray == nil || metadata.Bluray.SelectedReleaseID != "123" {
 		t.Fatalf("unexpected external metadata: %#v", metadata)
+	}
+	if metadata.Bluray.IMDBID != 200 {
+		t.Fatalf("unexpected bluray imdb id: %#v", metadata.Bluray)
+	}
+	if len(metadata.Bluray.Candidates) != 1 {
+		t.Fatalf("unexpected bluray candidates: %#v", metadata.Bluray.Candidates)
+	}
+	candidate := metadata.Bluray.Candidates[0]
+	if candidate.ReleaseID != "123" || candidate.Title != "Example 4K" || candidate.Score != 99.5 {
+		t.Fatalf("unexpected bluray candidate: %#v", candidate)
 	}
 
 	if err := repo.SaveReleaseNameOverrides(ctx, "/media/file.mkv", ReleaseNameOverrides{
@@ -391,7 +409,7 @@ func TestSQLiteRepositoryConcurrentMigrateAndAccessOnDisk(t *testing.T) {
 			}
 			ctx := context.Background()
 			for item := 0; item < 10; item++ {
-				sourcePath := filepath.Join("C:\\shared", fmt.Sprintf("release-%d-%d.mkv", idx, item))
+				sourcePath := testStoredPath("shared", fmt.Sprintf("release-%d-%d.mkv", idx, item))
 				if err := repo.Save(ctx, FileMetadata{
 					Path:      sourcePath,
 					Title:     fmt.Sprintf("Title %d-%d", idx, item),
@@ -421,7 +439,7 @@ func TestSQLiteRepositoryConcurrentMigrateAndAccessOnDisk(t *testing.T) {
 	ctx := context.Background()
 	for idx := range repos {
 		for item := 0; item < 10; item++ {
-			sourcePath := filepath.Join("C:\\shared", fmt.Sprintf("release-%d-%d.mkv", idx, item))
+			sourcePath := testStoredPath("shared", fmt.Sprintf("release-%d-%d.mkv", idx, item))
 			if _, err := repos[0].GetByPath(ctx, sourcePath); err != nil {
 				t.Fatalf("get %s: %v", sourcePath, err)
 			}
@@ -447,7 +465,7 @@ func TestSQLiteRepositoryConcurrentReadsOnDisk(t *testing.T) {
 
 	ctx := context.Background()
 	for i := 0; i < 25; i++ {
-		sourcePath := filepath.Join("C:\\reads", fmt.Sprintf("release-%d.mkv", i))
+		sourcePath := testStoredPath("reads", fmt.Sprintf("release-%d.mkv", i))
 		if err := writerRepo.Save(ctx, FileMetadata{
 			Path:      sourcePath,
 			Title:     fmt.Sprintf("Title %d", i),
@@ -480,7 +498,7 @@ func TestSQLiteRepositoryConcurrentReadsOnDisk(t *testing.T) {
 			defer wg.Done()
 			<-start
 			for item := 0; item < 25; item++ {
-				sourcePath := filepath.Join("C:\\reads", fmt.Sprintf("release-%d.mkv", item))
+				sourcePath := testStoredPath("reads", fmt.Sprintf("release-%d.mkv", item))
 				got, err := repo.GetByPath(ctx, sourcePath)
 				if err != nil {
 					errCh <- fmt.Errorf("reader %d get %d: %w", idx, item, err)
@@ -538,7 +556,7 @@ func TestSQLiteRepositoryReadsOverlapWithWriteTransaction(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	sourcePath := filepath.Join("C:\\overlap", "release.mkv")
+	sourcePath := testStoredPath("overlap", "release.mkv")
 	if err := writerRepo.Save(ctx, FileMetadata{
 		Path:      sourcePath,
 		Title:     "Before",
@@ -664,7 +682,7 @@ func TestIsBusyErrorUnwrapsSQLiteErrors(t *testing.T) {
 	}()
 
 	err = contendingRepo.Save(ctx, FileMetadata{
-		Path:      filepath.Join("C:\\locked", "file.mkv"),
+		Path:      testStoredPath("locked", "file.mkv"),
 		Title:     "Locked",
 		UpdatedAt: time.Now().UTC(),
 	})
@@ -1350,6 +1368,25 @@ func TestSQLitePurgeContentData(t *testing.T) {
 	if err := repo.CreateUploadRecord(ctx, UploadRecord{Tracker: "BLU", Status: "pending", SourcePath: otherPath}); err != nil {
 		t.Fatalf("save upload record other: %v", err)
 	}
+	if err := repo.SaveUIState(ctx, "target-state", "Target", api.UIState{
+		"path": targetPath,
+		"preview": map[string]any{
+			"SourcePath":  targetPath,
+			"TrackerData": []any{map[string]any{"Tracker": "BLU", "TrackerID": "123"}},
+		},
+	}); err != nil {
+		t.Fatalf("save target ui state: %v", err)
+	}
+	if err := repo.SaveUIState(ctx, "target-upload-state", "Target upload", api.UIState{
+		"trackerUploadSnapshot": map[string]any{"sourcePath": targetPath},
+	}); err != nil {
+		t.Fatalf("save target upload ui state: %v", err)
+	}
+	if err := repo.SaveUIState(ctx, "other-state", "Other", api.UIState{
+		"path": otherPath,
+	}); err != nil {
+		t.Fatalf("save other ui state: %v", err)
+	}
 
 	if err := repo.PurgeContentData(ctx, targetPath); err != nil {
 		t.Fatalf("purge content: %v", err)
@@ -1404,6 +1441,13 @@ func TestSQLitePurgeContentData(t *testing.T) {
 	}
 	if len(pending) != 1 || pending[0].SourcePath != otherPath {
 		t.Fatalf("expected only other upload record remaining, got %#v", pending)
+	}
+	uiStates, err := repo.ListUIStates(ctx)
+	if err != nil {
+		t.Fatalf("list ui states: %v", err)
+	}
+	if len(uiStates) != 1 || uiStates[0].ID != "other-state" {
+		t.Fatalf("expected only other ui state remaining, got %#v", uiStates)
 	}
 }
 
@@ -1766,4 +1810,8 @@ func intPtr(value int) *int {
 func boolPtr(value bool) *bool {
 	ptrValue := value
 	return &ptrValue
+}
+
+func testStoredPath(parts ...string) string {
+	return filepath.ToSlash(filepath.Join(parts...))
 }
