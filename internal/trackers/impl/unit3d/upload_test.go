@@ -765,7 +765,7 @@ func TestBuildUnit3DNameULCXRemovesHybridFromWebDV(t *testing.T) {
 		Edition:     "Hybrid",
 		WebDV:       true,
 	}
-	got := buildUnit3DName("ULCX", meta)
+	got := buildUnit3DName("ULCX", meta, config.TrackerConfig{})
 	if strings.Contains(got, "Hybrid") {
 		t.Fatalf("expected Hybrid removed for ULCX WEB-DL WebDV, got %q", got)
 	}
